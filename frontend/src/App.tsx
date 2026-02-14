@@ -65,7 +65,6 @@ function AppRoutes() {
         <Route path="policies" element={<Policies />} />
         <Route path="drafts" element={<DraftAssistant />} />
         <Route path="admin" element={<AdminPanel />} />
-        <Route path="admin/users/:id" element={<UserEdit />} />
         <Route path="team" element={<Team />} />
         <Route path="performance" element={<Performance />} />
         <Route path="tasks" element={<Tasks />} />

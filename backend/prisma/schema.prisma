@@ -1,0 +1,452 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  employee
+  recruiter
+  interviewer
+  manager
+  admin_hr
+  admin
+}
+
+enum CandidateStatus {
+  active
+  rejected
+  offered
+  hired
+}
+
+enum InterviewStatus {
+  scheduled
+  completed
+}
+
+enum FeedbackStatus {
+  pending
+  submitted
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+}
+
+enum Recommendation {
+  strong_hire
+  hire
+  hold
+  reject
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
+enum OfferStatus {
+  locked
+  ready
+  released
+}
+
+enum AttendanceRemark {
+  Present
+  WeekOff
+  AutoClockedOut
+  OnLeave
+  Absent
+}
+
+enum RegularizationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum LeaveRequestStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum TaskStatus {
+  not_started
+  on_going
+  done
+}
+
+enum OneOnOneStatus {
+  scheduled
+  completed
+  cancelled
+}
+
+enum PerformanceReviewStatus {
+  draft
+  submitted
+  completed
+}
+
+enum ExitProcessStatus {
+  initiated
+  in_progress
+  completed
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  password     String
+  role         Role
+  department   String
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  employeeId   String?   @unique
+  managerId    String?
+  designation  String?
+  location     String?
+  joiningDate  DateTime?
+  birthday     DateTime?
+  organization String?
+  avatarUrl    String?
+
+  manager       User?     @relation("ManagerReports", fields: [managerId], references: [id])
+  directReports User[]    @relation("ManagerReports")
+  assignedShiftId String?
+
+  createdCandidates Candidate[]
+  interviews        Interview[]
+  approvals         Approval[]
+  releasedOffers    Offer[]
+  auditLogs         AuditLog[]
+
+  attendanceRecords       AttendanceRecord[]
+  attendanceRegularizations AttendanceRegularization[]
+  assignedShift           Shift? @relation(fields: [assignedShiftId], references: [id])
+  leaveBalances           LeaveBalance[]
+  leaveRequests           LeaveRequest[]
+  leaveRequestsApproved   LeaveRequest[] @relation("LeaveApprover")
+
+  tasks                   Task[]         @relation("TaskAssignee")
+  tasksAssigned           Task[]         @relation("TaskAssigner")
+  oneOnOnes               OneOnOne[]     @relation("OneOnOneEmployee")
+  oneOnOnesAsManager      OneOnOne[]     @relation("OneOnOneManager")
+  performanceUpdates      PerformanceUpdate[]
+  performanceReviews      PerformanceReview[]
+  exitProcesses           ExitProcess[]
+  notifications           Notification[]
+}
+
+model Shift {
+  id           String   @id @default(uuid())
+  name         String
+  inTime       String
+  outTime      String
+  breakMinutes Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  users User[]
+}
+
+model AttendanceRecord {
+  id                    String           @id @default(uuid())
+  userId                String
+  date                  DateTime         @db.Date
+  clockIn               DateTime?
+  clockOut              DateTime?
+  breakMinutes          Int              @default(0)
+  totalMinutes          Int              @default(0)
+  remark                AttendanceRemark @default(Present)
+  regularizationRequested Boolean        @default(false)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  regularization AttendanceRegularization?
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model AttendanceRegularization {
+  id                 String              @id @default(uuid())
+  userId             String
+  attendanceRecordId String              @unique
+  requestedClockIn   DateTime
+  requestedClockOut  DateTime
+  reason             String
+  status             RegularizationStatus @default(pending)
+  approverId         String?
+  approvedAt         DateTime?
+  createdAt          DateTime            @default(now())
+
+  attendanceRecord AttendanceRecord @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model LeaveType {
+  id           String   @id @default(uuid())
+  name         String
+  unit         String   @default("days")
+  renewsYearly Boolean  @default(true)
+  accrualType  String?
+  createdAt    DateTime @default(now())
+
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
+}
+
+model LeaveBalance {
+  id          String   @id @default(uuid())
+  userId      String
+  leaveTypeId String
+  year        Int
+  accrued     Float    @default(0)
+  used        Float    @default(0)
+  requested   Float    @default(0)
+  balance     Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leaveTypeId, year])
+  @@index([userId])
+}
+
+model LeaveRequest {
+  id          String            @id @default(uuid())
+  userId      String
+  leaveTypeId String
+  startDate   DateTime          @db.Date
+  endDate     DateTime          @db.Date
+  days        Float
+  reason      String?
+  status      LeaveRequestStatus @default(pending)
+  approverId  String?
+  approvedAt  DateTime?
+  createdAt   DateTime          @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  approver  User?    @relation("LeaveApprover", fields: [approverId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Holiday {
+  id         String   @id @default(uuid())
+  name       String
+  date       DateTime @db.Date
+  isOptional Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([date])
+}
+
+model Task {
+  id           String     @id @default(uuid())
+  userId       String
+  title        String
+  dueDate      DateTime   @db.Date
+  status       TaskStatus @default(not_started)
+  assignedById String?
+  createdAt    DateTime   @default(now())
+
+  user      User  @relation("TaskAssignee", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy User? @relation("TaskAssigner", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([dueDate])
+}
+
+model OneOnOne {
+  id          String          @id @default(uuid())
+  userId      String
+  managerId   String
+  scheduledAt DateTime
+  notes       String?
+  status      OneOnOneStatus  @default(scheduled)
+  createdAt   DateTime        @default(now())
+
+  user    User @relation("OneOnOneEmployee", fields: [userId], references: [id], onDelete: Cascade)
+  manager User @relation("OneOnOneManager", fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([managerId])
+}
+
+model PerformanceUpdate {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PerformanceReview {
+  id         String                 @id @default(uuid())
+  userId     String
+  periodStart DateTime              @db.Date
+  periodEnd   DateTime              @db.Date
+  status     PerformanceReviewStatus @default(draft)
+  ratings    Json?
+  createdAt  DateTime               @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ExitProcess {
+  id              String           @id @default(uuid())
+  userId          String
+  resignationDate DateTime         @db.Date
+  lastWorkingDate DateTime         @db.Date
+  status          ExitProcessStatus @default(initiated)
+  initiatedAt     DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Candidate {
+  id           String         @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String
+  phone        String?
+  roleApplied  String
+  stage        String?
+  status       CandidateStatus @default(active)
+  createdById  String
+  createdAt    DateTime       @default(now())
+
+  createdBy  User        @relation(fields: [createdById], references: [id])
+  interviews Interview[]
+  approvals  Approval[]
+  offers     Offer[]
+
+  @@index([status])
+  @@index([createdById])
+}
+
+model Interview {
+  id            String        @id @default(uuid())
+  candidateId   String
+  interviewerId String
+  roundName     String
+  scheduledAt   DateTime
+  status        InterviewStatus @default(scheduled)
+  feedbackStatus FeedbackStatus @default(pending)
+  createdAt     DateTime      @default(now())
+
+  candidate  Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  interviewer User     @relation(fields: [interviewerId], references: [id])
+  feedback   Feedback?
+
+  @@unique([candidateId, interviewerId, roundName])
+  @@index([candidateId])
+  @@index([interviewerId])
+}
+
+model Feedback {
+  id                 String        @id @default(uuid())
+  interviewId        String        @unique
+  scoreTechnical     Int
+  scoreCommunication Int
+  scoreProblemSolving Int
+  scoreCultureFit    Int
+  averageScore       Float
+  strengths          String
+  concerns           String
+  riskLevel          RiskLevel
+  recommendation     Recommendation
+  signedOff          Boolean       @default(false)
+  submittedAt        DateTime?
+
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@index([interviewId])
+}
+
+model Approval {
+  id         String        @id @default(uuid())
+  candidateId String
+  managerId  String
+  status     ApprovalStatus @default(pending)
+  approvedAt DateTime?
+  createdAt  DateTime      @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  manager   User      @relation(fields: [managerId], references: [id])
+
+  @@index([candidateId])
+  @@index([managerId])
+}
+
+model Offer {
+  id          String      @id @default(uuid())
+  candidateId String
+  status      OfferStatus @default(locked)
+  releasedAt  DateTime?
+  releasedById String?
+
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  releasedBy  User?     @relation(fields: [releasedById], references: [id])
+
+  @@unique([candidateId])
+  @@index([candidateId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  performedById String?
+  timestamp  DateTime @default(now())
+  metadata   Json?
+
+  performedBy User? @relation(fields: [performedById], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([performedById])
+  @@index([timestamp])
+}
