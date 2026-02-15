@@ -262,23 +262,37 @@ router.patch('/regularize/:id', async (req: Request, res: Response, next: NextFu
       return res.status(403).json({ error: 'Only the report’s manager or admin can approve' });
     }
 
-    const updated = await prisma.attendanceRegularization.update({
-      where: { id },
-      data: { status: status as 'approved' | 'rejected', approverId: approverId, approvedAt: new Date() },
-      include: { attendanceRecord: true, user: { select: { id: true, name: true } } },
-    });
-
     if (status === 'approved') {
-      await prisma.attendanceRecord.update({
-        where: { id: reg.attendanceRecordId },
-        data: {
-          clockIn: reg.requestedClockIn,
-          clockOut: reg.requestedClockOut,
-          totalMinutes: Math.max(0, Math.floor((reg.requestedClockOut.getTime() - reg.requestedClockIn.getTime()) / 60000) - (reg.attendanceRecord?.breakMinutes || 0)),
-        },
+      const breakMin = reg.attendanceRecord?.breakMinutes ?? 0;
+      const totalMinutes = Math.max(
+        0,
+        Math.floor((reg.requestedClockOut.getTime() - reg.requestedClockIn.getTime()) / 60000) - breakMin
+      );
+      await prisma.$transaction([
+        prisma.attendanceRecord.update({
+          where: { id: reg.attendanceRecordId },
+          data: {
+            clockIn: reg.requestedClockIn,
+            clockOut: reg.requestedClockOut,
+            totalMinutes,
+          },
+        }),
+        prisma.attendanceRegularization.update({
+          where: { id },
+          data: { status: 'approved', approverId, approvedAt: new Date() },
+        }),
+      ]);
+    } else {
+      await prisma.attendanceRegularization.update({
+        where: { id },
+        data: { status: 'rejected', approverId, approvedAt: new Date() },
       });
     }
 
+    const updated = await prisma.attendanceRegularization.findUnique({
+      where: { id },
+      include: { attendanceRecord: true, user: { select: { id: true, name: true } } },
+    });
     res.json(updated);
   } catch (e) {
     next(e);

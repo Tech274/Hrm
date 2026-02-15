@@ -111,6 +111,7 @@ router.put(
         if (body[key] !== undefined) {
           if (key === 'managerId' && body[key] === '') data[key] = null;
           else if (key === 'assignedShiftId' && body[key] === '') data[key] = null;
+          else if (key === 'joiningDate' || key === 'birthday') data[key] = new Date(body[key] as string);
           else data[key] = body[key];
         }
       }

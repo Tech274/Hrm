@@ -28,7 +28,7 @@ finally {
 
 Write-Host ""
 Write-Host "Database ready. Start the app in two terminals:"
-Write-Host "  Terminal 1:  cd backend  && set DATABASE_URL=$dbUrl && npm run dev"
+Write-Host "  Terminal 1:  cd backend  ; `$env:DATABASE_URL='$dbUrl'; npm run dev"
 Write-Host "  Terminal 2:  cd frontend && npm run dev"
 Write-Host ""
 Write-Host "Then open http://localhost:5173 (or the port Vite shows)"

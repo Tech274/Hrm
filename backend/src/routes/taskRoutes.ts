@@ -34,7 +34,11 @@ router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
 
     if (view === 'status') {
       const byStatus = { not_started: [] as typeof tasks, on_going: [] as typeof tasks, done: [] as typeof tasks };
-      tasks.forEach((t) => byStatus[t.status].push(t));
+      const validStatuses = ['not_started', 'on_going', 'done'] as const;
+      tasks.forEach((t) => {
+        const key = validStatuses.includes(t.status as (typeof validStatuses)[number]) ? t.status : 'not_started';
+        byStatus[key].push(t);
+      });
       return res.json({ tasks: byStatus, weekStart: start, weekEnd: end });
     }
     res.json({ tasks, weekStart: start, weekEnd: end });
