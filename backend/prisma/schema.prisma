@@ -148,6 +148,14 @@ model User {
   performanceReviews      PerformanceReview[]
   exitProcesses           ExitProcess[]
   notifications           Notification[]
+
+  pulseChecks         PulseCheck[]     @relation("PulseCheckUser")
+  recognitionsGiven   Recognition[]   @relation("RecognitionFrom")
+  recognitionsReceived Recognition[] @relation("RecognitionTo")
+  announcementsCreated Announcement[]
+
+  jobRequisitionsAsRecruiter JobRequisition[]
+  candidateNotes             CandidateNote[]
 }
 
 model Shift {
@@ -346,25 +354,70 @@ model Notification {
   @@index([userId])
 }
 
-model Candidate {
-  id           String         @id @default(uuid())
-  firstName    String
-  lastName     String
-  email        String
-  phone        String?
-  roleApplied  String
-  stage        String?
-  status       CandidateStatus @default(active)
-  createdById  String
-  createdAt    DateTime       @default(now())
+model JobRequisition {
+  id               String    @id @default(uuid())
+  title            String
+  department       String
+  status           String    @default("open") // open, closed, on_hold
+  openedAt        DateTime  @default(now())
+  closedAt        DateTime?
+  hiringManagerId  String?
+  recruiterId      String?
+  targetHireDate   DateTime? @db.Date
 
-  createdBy  User        @relation(fields: [createdById], references: [id])
-  interviews Interview[]
-  approvals  Approval[]
-  offers     Offer[]
+  candidates Candidate[]
+  recruiter  User?    @relation(fields: [recruiterId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([hiringManagerId])
+  @@index([recruiterId])
+}
+
+model CandidateNote {
+  id          String   @id @default(uuid())
+  candidateId String
+  userId      String
+  body        String
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+}
+
+model Candidate {
+  id                String           @id @default(uuid())
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  roleApplied       String
+  stage             String?
+  status            CandidateStatus  @default(active)
+  source            String?          // referral, job_board, linkedin, agency, etc.
+  jobRequisitionId  String?
+  currentCtc        Float?
+  expectedCtc       Float?
+  presentCompany    String?
+  experienceYears   Float?
+  noticePeriodDays  Int?
+  technologies      Json?            // array of strings
+  createdById       String
+  createdAt         DateTime         @default(now())
+
+  createdBy       User             @relation(fields: [createdById], references: [id])
+  jobRequisition  JobRequisition?  @relation(fields: [jobRequisitionId], references: [id], onDelete: SetNull)
+  interviews      Interview[]
+  approvals       Approval[]
+  offers          Offer[]
+  notes           CandidateNote[]
 
   @@index([status])
   @@index([createdById])
+  @@index([source])
+  @@index([jobRequisitionId])
 }
 
 model Interview {
@@ -433,6 +486,51 @@ model Offer {
 
   @@unique([candidateId])
   @@index([candidateId])
+}
+
+model PulseCheck {
+  id        String   @id @default(uuid())
+  userId    String
+  score     Int      // 1-5
+  week      DateTime @db.Date
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user User @relation("PulseCheckUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, week])
+  @@index([userId])
+  @@index([week])
+}
+
+model Recognition {
+  id         String   @id @default(uuid())
+  fromUserId String
+  toUserId   String
+  type       String   // badge type: thanks, kudos, star, etc.
+  message    String?
+  createdAt  DateTime @default(now())
+
+  fromUser User @relation("RecognitionFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("RecognitionTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+model Announcement {
+  id            String   @id @default(uuid())
+  title         String
+  body          String
+  createdById   String
+  effectiveFrom DateTime
+  effectiveTo   DateTime
+  createdAt     DateTime @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([effectiveFrom])
+  @@index([effectiveTo])
 }
 
 model AuditLog {

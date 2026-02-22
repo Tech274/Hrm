@@ -1,24 +1,36 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
 
 const SOURCE_OPTIONS = ['', 'referral', 'job_board', 'linkedin', 'agency', 'website', 'other'];
 const STAGE_OPTIONS = ['', 'Sourced', 'Screening', 'Interview', 'Offer', 'Hired'];
+const STATUS_OPTIONS = ['active', 'rejected', 'offered', 'hired'];
 
-interface JobReqOption {
+interface Candidate {
   id: string;
-  title: string;
-  department: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  roleApplied: string;
+  stage: string | null;
+  source: string | null;
+  status: string;
+  currentCtc: number | null;
+  expectedCtc: number | null;
+  presentCompany: string | null;
+  experienceYears: number | null;
+  noticePeriodDays: number | null;
+  technologies: string[] | null;
 }
 
-export default function CreateCandidate() {
+export default function CandidateEdit() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const jobReqIdParam = searchParams.get('jobRequisitionId');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [techInput, setTechInput] = useState('');
-  const [jobReqs, setJobReqs] = useState<JobReqOption[]>([]);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -27,7 +39,7 @@ export default function CreateCandidate() {
     roleApplied: '',
     stage: '',
     source: '',
-    jobRequisitionId: jobReqIdParam || '',
+    status: 'active',
     currentCtc: '',
     expectedCtc: '',
     presentCompany: '',
@@ -37,17 +49,31 @@ export default function CreateCandidate() {
   });
 
   useEffect(() => {
+    if (!id) return;
     api
-      .get('/job-requisitions?status=open&limit=100')
-      .then((r) => setJobReqs(r.data?.data ?? []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (jobReqIdParam && !form.jobRequisitionId) {
-      setForm((f) => ({ ...f, jobRequisitionId: jobReqIdParam }));
-    }
-  }, [jobReqIdParam, form.jobRequisitionId]);
+      .get<Candidate>(`/candidates/${id}`)
+      .then((res) => {
+        const c = res.data;
+        setForm({
+          firstName: c.firstName,
+          lastName: c.lastName,
+          email: c.email,
+          phone: c.phone || '',
+          roleApplied: c.roleApplied,
+          stage: c.stage || '',
+          source: c.source || '',
+          status: c.status,
+          currentCtc: c.currentCtc != null ? String(c.currentCtc) : '',
+          expectedCtc: c.expectedCtc != null ? String(c.expectedCtc) : '',
+          presentCompany: c.presentCompany || '',
+          experienceYears: c.experienceYears != null ? String(c.experienceYears) : '',
+          noticePeriodDays: c.noticePeriodDays != null ? String(c.noticePeriodDays) : '',
+          technologies: c.technologies && Array.isArray(c.technologies) ? c.technologies : [],
+        });
+      })
+      .catch(() => setError('Failed to load candidate'))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -67,7 +93,7 @@ export default function CreateCandidate() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setSaving(true);
     try {
       const payload = {
         firstName: form.firstName,
@@ -77,7 +103,7 @@ export default function CreateCandidate() {
         roleApplied: form.roleApplied,
         stage: form.stage || undefined,
         source: form.source || undefined,
-        jobRequisitionId: form.jobRequisitionId || undefined,
+        status: form.status,
         currentCtc: form.currentCtc ? parseFloat(form.currentCtc) : undefined,
         expectedCtc: form.expectedCtc ? parseFloat(form.expectedCtc) : undefined,
         presentCompany: form.presentCompany || undefined,
@@ -85,29 +111,47 @@ export default function CreateCandidate() {
         noticePeriodDays: form.noticePeriodDays ? parseInt(form.noticePeriodDays, 10) : undefined,
         technologies: form.technologies.length > 0 ? form.technologies : undefined,
       };
-      const res = await api.post('/candidates', payload);
-      navigate(`/candidates/${res.data.id}`);
+      await api.put(`/candidates/${id}`, payload);
+      navigate(`/candidates/${id}`);
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-          'Failed to create candidate'
+          'Failed to update candidate'
       );
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
+  if (error && !form.firstName) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-md">
+        {error}
+        <Link to="/candidates" className="block mt-2 text-sm underline">Back to Candidates</Link>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Add Candidate</h1>
+      <div className="mb-6 flex items-center gap-4">
+        <Link to={`/candidates/${id}`} className="text-slate-600 hover:text-slate-900 text-sm font-medium">← Back to Profile</Link>
+        <h1 className="text-2xl font-bold text-slate-900">Edit Candidate</h1>
+      </div>
       <form
         onSubmit={handleSubmit}
         className="bg-white rounded-lg shadow border border-slate-200 p-6 max-w-2xl"
       >
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">{error}</div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -156,6 +200,18 @@ export default function CreateCandidate() {
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => update('status', e.target.value)}
+              className="w-full px-4 py-2 border border-slate-300 rounded-md"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Stage</label>
             <select
               value={form.stage}
@@ -164,21 +220,6 @@ export default function CreateCandidate() {
             >
               {STAGE_OPTIONS.map((o) => (
                 <option key={o || 'all'} value={o}>{o || '— Select —'}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Job Requisition</label>
-            <select
-              value={form.jobRequisitionId}
-              onChange={(e) => update('jobRequisitionId', e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-md"
-            >
-              <option value="">— None —</option>
-              {jobReqs.map((jr) => (
-                <option key={jr.id} value={jr.id}>
-                  {jr.title} ({jr.department})
-                </option>
               ))}
             </select>
           </div>
@@ -203,7 +244,6 @@ export default function CreateCandidate() {
               value={form.currentCtc}
               onChange={(e) => update('currentCtc', e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-md"
-              placeholder="e.g. 12.5"
             />
           </div>
           <div>
@@ -215,7 +255,6 @@ export default function CreateCandidate() {
               value={form.expectedCtc}
               onChange={(e) => update('expectedCtc', e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-md"
-              placeholder="e.g. 15"
             />
           </div>
           <div>
@@ -224,7 +263,6 @@ export default function CreateCandidate() {
               value={form.presentCompany}
               onChange={(e) => update('presentCompany', e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-md"
-              placeholder="Current employer"
             />
           </div>
           <div>
@@ -237,7 +275,6 @@ export default function CreateCandidate() {
               value={form.experienceYears}
               onChange={(e) => update('experienceYears', e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-md"
-              placeholder="e.g. 3.5"
             />
           </div>
           <div>
@@ -249,7 +286,6 @@ export default function CreateCandidate() {
               value={form.noticePeriodDays}
               onChange={(e) => update('noticePeriodDays', e.target.value)}
               className="w-full px-4 py-2 border border-slate-300 rounded-md"
-              placeholder="e.g. 30"
             />
           </div>
         </div>
@@ -282,18 +318,17 @@ export default function CreateCandidate() {
         <div className="flex gap-4 mt-6">
           <button
             type="submit"
-            disabled={loading}
+            disabled={saving}
             className="px-4 py-2 bg-slate-900 text-white rounded-md hover:bg-slate-800 disabled:opacity-50"
           >
-            {loading ? 'Creating...' : 'Create'}
+            {saving ? 'Saving...' : 'Save'}
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/candidates')}
+          <Link
+            to={`/candidates/${id}`}
             className="px-4 py-2 border border-slate-300 rounded-md hover:bg-slate-50"
           >
             Cancel
-          </button>
+          </Link>
         </div>
       </form>
     </div>

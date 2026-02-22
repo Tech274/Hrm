@@ -49,12 +49,24 @@ interface Candidate {
   }>;
 }
 
-type Tab = 'overview' | 'interviews' | 'feedback' | 'approvals' | 'audit';
+type Tab = 'overview' | 'interviews' | 'feedback' | 'approvals' | 'notes' | 'audit';
+
+interface CandidateNote {
+  id: string;
+  body: string;
+  isPrivate: boolean;
+  createdAt: string;
+  author: { id: string; name: string; email: string };
+}
 
 export default function CandidateProfile() {
   const { id } = useParams<{ id: string }>();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [notes, setNotes] = useState<CandidateNote[]>([]);
+  const [noteBody, setNoteBody] = useState('');
+  const [notePrivate, setNotePrivate] = useState(false);
+  const [addingNote, setAddingNote] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -78,6 +90,32 @@ export default function CandidateProfile() {
       .then((res) => setAuditLogs(res.data.data))
       .catch(() => setAuditLogs([]));
   }, [id, activeTab]);
+
+  useEffect(() => {
+    if (!id || activeTab !== 'notes') return;
+    api
+      .get(`/candidates/${id}/notes`)
+      .then((res) => setNotes(res.data.data ?? []))
+      .catch(() => setNotes([]));
+  }, [id, activeTab]);
+
+  const addNote = async () => {
+    if (!id || !noteBody.trim()) return;
+    setAddingNote(true);
+    try {
+      const res = await api.post(`/candidates/${id}/notes`, {
+        body: noteBody.trim(),
+        isPrivate: notePrivate,
+      });
+      setNotes((prev) => [res.data, ...prev]);
+      setNoteBody('');
+      setNotePrivate(false);
+    } catch {
+      // ignore
+    } finally {
+      setAddingNote(false);
+    }
+  };
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -122,6 +160,7 @@ export default function CandidateProfile() {
     { key: 'interviews', label: 'Interviews' },
     { key: 'feedback', label: 'Feedback' },
     { key: 'approvals', label: 'Approvals' },
+    { key: 'notes', label: 'Notes' },
     { key: 'audit', label: 'Audit' },
   ];
 
@@ -265,6 +304,61 @@ export default function CandidateProfile() {
                 </Link>
               </div>
             )
+          )}
+        </div>
+      )}
+
+      {activeTab === 'notes' && (
+        <div className="space-y-4">
+          {canEdit && (
+            <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+              <h3 className="font-semibold mb-2">Add Note</h3>
+              <textarea
+                value={noteBody}
+                onChange={(e) => setNoteBody(e.target.value)}
+                placeholder="Add a note..."
+                rows={3}
+                className="w-full px-4 py-2 border border-slate-300 rounded-md text-sm"
+              />
+              <div className="mt-2 flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={notePrivate}
+                    onChange={(e) => setNotePrivate(e.target.checked)}
+                    className="rounded"
+                  />
+                  Private (HR only)
+                </label>
+                <button
+                  onClick={addNote}
+                  disabled={addingNote || !noteBody.trim()}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50 text-sm"
+                >
+                  {addingNote ? 'Adding…' : 'Add Note'}
+                </button>
+              </div>
+            </div>
+          )}
+          {notes.length === 0 ? (
+            <p className="text-slate-500">No notes yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {notes.map((n) => (
+                <div
+                  key={n.id}
+                  className={`rounded-lg border p-4 ${
+                    n.isPrivate ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
+                  }`}
+                >
+                  <p className="text-slate-800 whitespace-pre-wrap">{n.body}</p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {n.author.name} · {new Date(n.createdAt).toLocaleString()}
+                    {n.isPrivate && ' · Private'}
+                  </p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

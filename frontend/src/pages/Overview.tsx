@@ -12,6 +12,7 @@ interface OverviewData {
   attendanceRegularization: { raised: number; approved: number; pending: number; rejected: number };
   birthdays: { id: string; name: string; designation?: string; department: string }[];
   anniversaries: { id: string; name: string; designation?: string; department: string }[];
+  leaveSuggestions?: { message: string; type: string }[];
 }
 
 export default function Overview() {
@@ -19,6 +20,10 @@ export default function Overview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [clocking, setClocking] = useState<'in' | 'out' | null>(null);
+  const [announcements, setAnnouncements] = useState<{ id: string; title: string; body: string; createdBy: { name: string } }[]>([]);
+  const [pulseScore, setPulseScore] = useState<number | null>(null);
+  const [pulseSubmitting, setPulseSubmitting] = useState(false);
+  const [recognitions, setRecognitions] = useState<{ fromUser: { name: string }; type: string; message: string | null }[]>([]);
 
   const load = () => {
     api
@@ -31,6 +36,30 @@ export default function Overview() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    api.get('/announcements').then((r) => setAnnouncements(r.data)).catch(() => setAnnouncements([]));
+  }, []);
+
+  const loadPulse = () => {
+    api.get('/pulse/me?weeks=1').then((r) => {
+      const arr = r.data || [];
+      if (arr.length) setPulseScore(arr[arr.length - 1].score);
+    }).catch(() => {});
+  };
+  useEffect(() => { loadPulse(); }, []);
+
+  useEffect(() => {
+    api.get('/recognition/me').then((r) => setRecognitions((r.data || []).slice(0, 5))).catch(() => setRecognitions([]));
+  }, []);
+
+  const submitPulse = (score: number) => {
+    setPulseSubmitting(true);
+    api.post('/pulse', { score })
+      .then(() => { setPulseScore(score); loadPulse(); })
+      .catch(() => {})
+      .finally(() => setPulseSubmitting(false));
+  };
 
   const handleClockIn = () => {
     setClocking('in');
@@ -117,6 +146,14 @@ export default function Overview() {
           </div>
         </div>
 
+        {(data?.leaveSuggestions?.length ?? 0) > 0 && (
+          <div className="bg-amber-50 rounded-xl border border-amber-200 p-4 lg:col-span-3">
+            <p className="text-amber-800 font-medium mb-2">Leave tip</p>
+            {data.leaveSuggestions!.map((s, i) => (
+              <p key={i} className="text-amber-700 text-sm">{s.message}</p>
+            ))}
+          </div>
+        )}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <p className="text-slate-500 text-sm font-medium mb-3">Request status</p>
           <div className="space-y-2 text-sm">
@@ -134,6 +171,61 @@ export default function Overview() {
           </div>
         </div>
       </div>
+
+      {announcements.length > 0 && (
+        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Announcements</h2>
+          <div className="space-y-3">
+            {announcements.map((a) => (
+              <div key={a.id} className="border-l-2 border-violet-500 pl-4 py-1">
+                <p className="font-medium text-slate-900">{a.title}</p>
+                <p className="text-sm text-slate-600 mt-0.5">{a.body}</p>
+                <p className="text-xs text-slate-400 mt-1">— {a.createdBy?.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(pulseScore === null || pulseScore !== null) && (
+        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Weekly pulse</h2>
+          <p className="text-slate-600 text-sm mb-3">How are you feeling this week? (1–5)</p>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                disabled={pulseSubmitting}
+                onClick={() => submitPulse(n)}
+                className={`w-10 h-10 rounded-lg font-medium ${
+                  pulseScore === n
+                    ? 'bg-violet-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                } disabled:opacity-50`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          {pulseScore !== null && <p className="text-sm text-slate-500 mt-2">Thanks for your feedback.</p>}
+        </div>
+      )}
+
+      {recognitions.length > 0 && (
+        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Recent recognitions</h2>
+          <ul className="space-y-2">
+            {recognitions.map((r, i) => (
+              <li key={i} className="flex items-center gap-2 py-1">
+                <span className="text-amber-500 font-medium">{r.type}</span>
+                <span className="text-slate-600">from {r.fromUser.name}</span>
+                {r.message && <span className="text-slate-500 text-sm">— {r.message}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">

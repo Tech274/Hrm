@@ -21,6 +21,12 @@ import exitRoutes from './exitRoutes';
 import alertsRoutes from './alertsRoutes';
 import calendarRoutes from './calendarRoutes';
 import knowledgeBaseRoutes from './knowledgeBaseRoutes';
+import taRoutes from './taRoutes';
+import jobRequisitionRoutes from './jobRequisitionRoutes';
+import reportRoutes from './reportRoutes';
+import pulseRoutes from './pulseRoutes';
+import recognitionRoutes from './recognitionRoutes';
+import announcementRoutes from './announcementRoutes';
 
 const router = Router();
 
@@ -46,5 +52,11 @@ router.use('/approvals', approvalRoutes);
 router.use('/audit', auditRoutes);
 router.use('/drafts', draftRoutes);
 router.use('/users', userRoutes);
+router.use('/ta', taRoutes);
+router.use('/job-requisitions', jobRequisitionRoutes);
+router.use('/reports', reportRoutes);
+router.use('/pulse', pulseRoutes);
+router.use('/recognition', recognitionRoutes);
+router.use('/announcements', announcementRoutes);
 
 export default router;

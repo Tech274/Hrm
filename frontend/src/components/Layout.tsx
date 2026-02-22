@@ -18,7 +18,8 @@ const navItems = [
 ];
 
 const hrNavItems = [
-  { path: '/dashboard', label: 'Recruitment', icon: BriefcaseIcon },
+  { path: '/ta-hub', label: 'TA Hub', icon: BriefcaseIcon },
+  { path: '/job-requisitions', label: 'Job Requisitions', icon: BriefcaseIcon },
   { path: '/candidates', label: 'Candidates', icon: UserPlusIcon },
   { path: '/policies', label: 'Policies', icon: ShieldIcon },
   { path: '/drafts', label: 'Draft Assistant', icon: FileEditIcon },
@@ -194,6 +195,17 @@ export default function Layout() {
           <p className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Employee
           </p>
+          {(user?.role === 'manager' || user?.role === 'admin' || user?.role === 'admin_hr') && (
+            <Link
+              to="/manager-dashboard"
+              className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                isActive('/manager-dashboard') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <BriefcaseIcon />
+              Manager Dashboard
+            </Link>
+          )}
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -206,31 +218,46 @@ export default function Layout() {
               {item.label}
             </Link>
           ))}
-          <p className="px-4 py-2 mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Recruitment
-          </p>
-          {hrNavItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
-                isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <item.icon />
-              {item.label}
-            </Link>
-          ))}
-          {user?.role === 'admin' && (
-            <Link
-              to="/admin"
-              className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
-                isActive('/admin') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <SettingsIcon />
-              Admin
-            </Link>
+          {user?.role !== 'employee' && (
+            <>
+              <p className="px-4 py-2 mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Recruitment
+              </p>
+              {hrNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                    isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <item.icon />
+                  {item.label}
+                </Link>
+              ))}
+            </>
+          )}
+          {(user?.role === 'admin' || user?.role === 'admin_hr') && (
+            <>
+              <Link
+                to="/admin"
+                className={`flex items-center gap-3 px-4 py-2.5 text-sm mt-2 ${
+                  isActive('/admin') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <SettingsIcon />
+                Admin
+              </Link>
+              <Link
+                to="/hr-data"
+                className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                  isActive('/hr-data') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <FileTextIcon />
+                HR Data
+              </Link>
+            </>
           )}
         </nav>
       </aside>
