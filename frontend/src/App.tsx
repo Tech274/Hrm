@@ -48,6 +48,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function IndexRedirect() {
+  const { user } = useAuth();
+  return <Navigate to={user?.role === 'recruiter' ? '/ta-hub' : '/overview'} replace />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -60,7 +65,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Navigate to="/overview" replace />} />
+        <Route index element={<IndexRedirect />} />
         <Route path="overview" element={<Overview />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="leave" element={<Leave />} />

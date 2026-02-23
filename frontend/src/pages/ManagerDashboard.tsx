@@ -68,22 +68,22 @@ export default function ManagerDashboard() {
       <h1 className="text-2xl font-bold text-slate-900 mb-6">Manager Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        <Link to="/team" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-sm font-medium text-slate-500 uppercase">Team size</p>
           <p className="text-3xl font-bold text-slate-900 mt-1">{data.teamSize}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/leave" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-amber-300 hover:shadow-md transition-all block">
           <p className="text-sm font-medium text-slate-500 uppercase">Pending leave</p>
           <p className="text-3xl font-bold text-amber-600 mt-1">{data.pendingLeave.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/attendance" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-amber-300 hover:shadow-md transition-all block">
           <p className="text-sm font-medium text-slate-500 uppercase">Pending regularization</p>
           <p className="text-3xl font-bold text-amber-600 mt-1">{data.pendingRegularization.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/job-requisitions" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-sm font-medium text-slate-500 uppercase">Open requisitions</p>
           <p className="text-3xl font-bold text-slate-900 mt-1">{data.openRequisitions}</p>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

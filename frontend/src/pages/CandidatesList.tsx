@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 
 interface Candidate {
@@ -17,11 +17,16 @@ interface Candidate {
 const STAGE_OPTIONS = ['Sourced', 'Screening', 'Interview', 'Offer', 'Hired'];
 
 export default function CandidatesList() {
+  const [searchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get('status');
+  const sourceFromUrl = searchParams.get('source');
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStage, setFilterStage] = useState('');
-  const [filterSource, setFilterSource] = useState('');
+  const [filterSource, setFilterSource] = useState(sourceFromUrl || '');
+  const [filterStatus, setFilterStatus] = useState(statusFromUrl || '');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkAction, setBulkAction] = useState<'stage' | 'reject' | ''>('');
@@ -31,6 +36,7 @@ export default function CandidatesList() {
     const params = new URLSearchParams();
     if (filterStage) params.set('stage', filterStage);
     if (filterSource) params.set('source', filterSource);
+    if (filterStatus) params.set('status', filterStatus);
     setLoading(true);
     api
       .get(`/candidates?${params.toString()}`)
@@ -40,8 +46,13 @@ export default function CandidatesList() {
   };
 
   useEffect(() => {
+    if (statusFromUrl) setFilterStatus(statusFromUrl);
+    if (sourceFromUrl) setFilterSource(sourceFromUrl);
+  }, [statusFromUrl, sourceFromUrl]);
+
+  useEffect(() => {
     fetchCandidates();
-  }, [filterStage, filterSource]);
+  }, [filterStage, filterSource, filterStatus]);
 
   const toggleSelect = (id: string) => {
     setSelected((s) => {
@@ -162,13 +173,25 @@ export default function CandidatesList() {
         </div>
       )}
 
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-4 mb-4 flex-wrap">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-3 py-2 border border-slate-300 rounded-md text-sm"
+        >
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="rejected">Rejected</option>
+          <option value="offered">Offered</option>
+          <option value="hired">Hired</option>
+        </select>
         <select
           value={filterStage}
           onChange={(e) => setFilterStage(e.target.value)}
           className="px-3 py-2 border border-slate-300 rounded-md text-sm"
         >
           <option value="">All stages</option>
+          <option value="Sourced">Sourced</option>
           <option value="Screening">Screening</option>
           <option value="Interview">Interview</option>
           <option value="Offer">Offer</option>

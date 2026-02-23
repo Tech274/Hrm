@@ -118,30 +118,30 @@ export default function TAHub() {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        <Link to="/candidates" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-xs font-medium text-slate-500 uppercase">Total Candidates</p>
           <p className="text-2xl font-bold text-slate-900 mt-1">{data.totalCandidates}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/candidates?status=active" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-emerald-300 hover:shadow-md transition-all block">
           <p className="text-xs font-medium text-slate-500 uppercase">Active</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">{data.activeCandidates}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/candidates" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-amber-300 hover:shadow-md transition-all block">
           <p className="text-xs font-medium text-slate-500 uppercase">Pending Feedback</p>
           <p className="text-2xl font-bold text-amber-600 mt-1">{data.pendingFeedback}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/job-requisitions?status=open" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-xs font-medium text-slate-500 uppercase">Open Reqs</p>
           <p className="text-2xl font-bold text-slate-900 mt-1">{data.openRequisitions}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/candidates" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-xs font-medium text-slate-500 uppercase">Interviews</p>
           <p className="text-2xl font-bold text-slate-600 mt-1">{data.totalInterviews}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+        </Link>
+        <Link to="/candidates?status=offered" className="bg-white rounded-lg shadow border border-slate-200 p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-xs font-medium text-slate-500 uppercase">Offers</p>
           <p className="text-2xl font-bold text-violet-600 mt-1">{data.recentOffers}</p>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -149,7 +149,7 @@ export default function TAHub() {
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Pipeline by Status</h2>
           <div className="space-y-3">
             {Object.entries(data.byStatus).map(([status, count]) => (
-              <div key={status} className="flex items-center gap-4">
+              <Link key={status} to={`/candidates?status=${status}`} className="flex items-center gap-4 py-1 -mx-1 px-1 rounded hover:bg-slate-50">
                 <div
                   className={`w-3 h-3 rounded-full ${statusColors[status] ?? 'bg-slate-300'}`}
                 />
@@ -163,7 +163,7 @@ export default function TAHub() {
                   />
                 </div>
                 <span className="text-sm font-medium text-slate-600 w-8">{count}</span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function TAHub() {
                 const total = Object.values(data.bySource).reduce((a, b) => a + b, 0);
                 const pct = total ? (count / total) * 100 : 0;
                 return (
-                  <div key={source} className="flex items-center gap-4">
+                  <Link key={source} to={`/candidates?source=${source}`} className="flex items-center gap-4 hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition-colors">
                     <span className="capitalize text-slate-700 w-28">{source}</span>
                     <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
                       <div
@@ -187,7 +187,7 @@ export default function TAHub() {
                       />
                     </div>
                     <span className="text-sm font-medium text-slate-600 w-16">{count}</span>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

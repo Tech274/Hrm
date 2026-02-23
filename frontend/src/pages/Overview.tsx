@@ -138,13 +138,13 @@ export default function Overview() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Link to="/attendance" className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-slate-500 text-sm font-medium mb-2">Activity (last 7 days)</p>
           <div className="space-y-2">
             <p className="text-slate-700">Avg working hours: <span className="font-semibold text-slate-900">{data?.avgWorkingHours ?? '-'}</span></p>
             <p className="text-slate-700">Avg break: <span className="font-semibold text-slate-900">{data?.avgBreakDuration ?? '-'}</span></p>
           </div>
-        </div>
+        </Link>
 
         {(data?.leaveSuggestions?.length ?? 0) > 0 && (
           <div className="bg-amber-50 rounded-xl border border-amber-200 p-4 lg:col-span-3">
@@ -154,7 +154,7 @@ export default function Overview() {
             ))}
           </div>
         )}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Link to="/leave" className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <p className="text-slate-500 text-sm font-medium mb-3">Request status</p>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -165,11 +165,9 @@ export default function Overview() {
               <span className="text-slate-600">Regularization</span>
               <span>Pending: {data?.attendanceRegularization.pending ?? 0}</span>
             </div>
-            <Link to="/leave" className="text-violet-600 font-medium mt-2 inline-block">My Leave</Link>
-            <span className="mx-2 text-slate-300">|</span>
-            <Link to="/attendance" className="text-violet-600 font-medium inline-block">My Attendance</Link>
+            <p className="text-violet-600 font-medium mt-2">My Leave / My Attendance →</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {announcements.length > 0 && (
@@ -228,7 +226,7 @@ export default function Overview() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <Link to="/people" className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Birthdays today</h2>
           {data?.birthdays?.length ? (
             <ul className="space-y-2">
@@ -243,8 +241,8 @@ export default function Overview() {
           ) : (
             <p className="text-slate-500 text-sm">No birthdays today.</p>
           )}
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        </Link>
+        <Link to="/people" className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:border-violet-300 hover:shadow-md transition-all block">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Work anniversaries today</h2>
           {data?.anniversaries?.length ? (
             <ul className="space-y-2">
@@ -259,7 +257,7 @@ export default function Overview() {
           ) : (
             <p className="text-slate-500 text-sm">No anniversaries today.</p>
           )}
-        </div>
+        </Link>
       </div>
 
       <div className="mt-6 bg-white rounded-xl border border-slate-200 shadow-sm p-6">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 
 interface JobRequisition {
@@ -15,11 +15,17 @@ interface JobRequisition {
 }
 
 export default function JobRequisitionsList() {
+  const [searchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get('status');
   const [data, setData] = useState<{ data: JobRequisition[]; total: number; page: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(statusFromUrl || '');
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    if (statusFromUrl) setStatusFilter(statusFromUrl);
+  }, [statusFromUrl]);
 
   useEffect(() => {
     const params = new URLSearchParams({ page: String(page), limit: '20' });

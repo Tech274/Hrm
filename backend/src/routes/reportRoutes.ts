@@ -1,11 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
-import { requireAdminHR } from '../middleware/rbac';
+import { requireRecruiter } from '../middleware/rbac';
 
 const router = Router();
 router.use(authMiddleware);
-router.use(requireAdminHR);
+router.use(requireRecruiter);
 
 function toCSV(rows: string[][]): string {
   return rows
