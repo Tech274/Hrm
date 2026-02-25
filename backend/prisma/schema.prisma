@@ -413,6 +413,7 @@ model Candidate {
   approvals       Approval[]
   offers          Offer[]
   notes           CandidateNote[]
+  assessmentAnswers CandidateAssessmentAnswer[]
 
   @@index([status])
   @@index([createdById])
@@ -531,6 +532,36 @@ model Announcement {
 
   @@index([effectiveFrom])
   @@index([effectiveTo])
+}
+
+model AssessmentQuestion {
+  id        String   @id @default(uuid())
+  title     String
+  body      String?  // question text
+  type      String   @default("text") // text, number, single_choice, multi_choice
+  options   Json?    // for choice types: ["Option A", "Option B"]
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  answers CandidateAssessmentAnswer[]
+
+  @@index([sortOrder])
+}
+
+model CandidateAssessmentAnswer {
+  id           String   @id @default(uuid())
+  candidateId  String
+  questionId   String
+  answer       String?  // text or selected option
+  submittedById String?
+  submittedAt  DateTime @default(now())
+
+  candidate  Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, questionId])
+  @@index([candidateId])
+  @@index([questionId])
 }
 
 model AuditLog {

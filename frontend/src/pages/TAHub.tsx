@@ -21,6 +21,18 @@ interface HubData {
     status: string;
     createdAt: string;
   }[];
+  timeToFillDays?: number | null;
+  ageOfJobDays?: number | null;
+  offerAcceptanceRate?: number | null;
+  completedInterviews?: {
+    id: string;
+    roundName: string;
+    scheduledAt: string;
+    feedbackStatus: string;
+    candidate: { id: string; firstName: string; lastName: string };
+  }[];
+  myActions?: { id: string; roundName: string; candidate: { id: string; firstName: string; lastName: string } }[];
+  recentActivities?: { action: string; timestamp: string; entityId: string; performedBy: { name: string } | null }[];
 }
 
 interface AnalyticsData {
@@ -144,9 +156,32 @@ export default function TAHub() {
         </Link>
       </div>
 
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 uppercase">Time-to-fill</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">
+            {data.timeToFillDays != null ? `${data.timeToFillDays} days` : '—'}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">Avg. job open → closed</p>
+        </div>
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 uppercase">Age of job</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">
+            {data.ageOfJobDays != null ? `${data.ageOfJobDays} days` : '—'}
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5">Avg. open reqs</p>
+        </div>
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-4">
+          <p className="text-xs font-medium text-slate-500 uppercase">Offer acceptance rate</p>
+          <p className="text-xl font-bold text-violet-600 mt-1">
+            {data.offerAcceptanceRate != null ? `${data.offerAcceptanceRate}%` : '—'}
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Pipeline by Status</h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Hiring Pipeline</h2>
           <div className="space-y-3">
             {Object.entries(data.byStatus).map(([status, count]) => (
               <Link key={status} to={`/candidates?status=${status}`} className="flex items-center gap-4 py-1 -mx-1 px-1 rounded hover:bg-slate-50">
@@ -234,6 +269,62 @@ export default function TAHub() {
           </div>
         </div>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Completed Interviews</h2>
+          {(data.completedInterviews?.length ?? 0) === 0 ? (
+            <p className="text-slate-500 text-sm">No completed interviews in this view.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 space-y-2">
+              {data.completedInterviews!.slice(0, 5).map((i) => (
+                <li key={i.id} className="py-2 first:pt-0">
+                  <Link to={`/candidates/${i.candidate.id}`} className="font-medium text-slate-800 hover:text-violet-600">
+                    {i.candidate.firstName} {i.candidate.lastName}
+                  </Link>
+                  <p className="text-sm text-slate-500">{i.roundName} · {i.feedbackStatus}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link to="/candidates" className="text-violet-600 text-sm font-medium mt-2 inline-block">View candidates →</Link>
+        </div>
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">My Actions</h2>
+          {(data.myActions?.length ?? 0) === 0 ? (
+            <p className="text-slate-500 text-sm">No pending actions.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 space-y-2">
+              {data.myActions!.slice(0, 5).map((a) => (
+                <li key={a.id} className="py-2 first:pt-0">
+                  <Link to={`/candidates/${a.candidate.id}`} className="font-medium text-slate-800 hover:text-violet-600">
+                    {a.candidate.firstName} {a.candidate.lastName}
+                  </Link>
+                  <p className="text-sm text-amber-600">Pending feedback: {a.roundName}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link to="/candidates" className="text-violet-600 text-sm font-medium mt-2 inline-block">View candidates →</Link>
+        </div>
+        <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">All Activities</h2>
+          {(data.recentActivities?.length ?? 0) === 0 ? (
+            <p className="text-slate-500 text-sm">No recent activity.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 space-y-1 text-sm">
+              {data.recentActivities!.slice(0, 8).map((a, idx) => (
+                <li key={a.entityId + a.timestamp + idx} className="py-1.5 first:pt-0">
+                  <span className="text-slate-600">{a.action}</span>
+                  <span className="text-slate-400"> · {a.performedBy?.name ?? 'System'}</span>
+                  <span className="text-slate-400 text-xs ml-1">{new Date(a.timestamp).toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link to="/audit" className="text-violet-600 text-sm font-medium mt-2 inline-block">Audit log →</Link>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-lg shadow border border-slate-200 p-6">

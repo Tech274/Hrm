@@ -31,6 +31,7 @@ import Exit from './pages/Exit';
 import Alerts from './pages/Alerts';
 import Calendar from './pages/Calendar';
 import KnowledgeBase from './pages/KnowledgeBase';
+import Assessments from './pages/Assessments';
 import Layout from './components/Layout';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="people" element={<People />} />
         <Route path="manager-dashboard" element={<ManagerDashboard />} />
         <Route path="knowledge-base" element={<KnowledgeBase />} />
+        <Route path="assessments" element={<Assessments />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

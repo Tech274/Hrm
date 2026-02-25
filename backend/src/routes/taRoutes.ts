@@ -66,6 +66,82 @@ router.get('/hub', async (req: Request, res: Response, next: NextFunction) => {
           })
         : 0;
 
+    const openRequisitions = await prisma.jobRequisition.findMany({
+      where: { status: 'open' },
+      select: { id: true, openedAt: true },
+    });
+    const now = Date.now();
+    const ageOfJobDays =
+      openRequisitions.length > 0
+        ? Math.round(
+            openRequisitions.reduce((s, r) => s + (now - new Date(r.openedAt).getTime()) / (24 * 60 * 60 * 1000), 0) /
+              openRequisitions.length
+          )
+        : null;
+
+    const closedReqs = await prisma.jobRequisition.findMany({
+      where: { status: 'closed', closedAt: { not: null } },
+      select: { openedAt: true, closedAt: true },
+    });
+    const timeToFillDays =
+      closedReqs.length > 0
+        ? Math.round(
+            closedReqs.reduce(
+              (s, r) =>
+                s +
+                (new Date(r.closedAt!).getTime() - new Date(r.openedAt).getTime()) / (24 * 60 * 60 * 1000),
+              0
+            ) / closedReqs.length
+          )
+        : null;
+
+    const releasedOffersCount = await prisma.offer.count({ where: { status: 'released' } });
+    const hiredAfterOffer = await prisma.candidate.count({ where: { status: 'hired' } });
+    const offerAcceptanceRate =
+      releasedOffersCount > 0 ? Math.round((hiredAfterOffer / releasedOffersCount) * 100) : null;
+
+    const completedInterviews = await prisma.interview.findMany({
+      where: { status: 'completed' },
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        roundName: true,
+        scheduledAt: true,
+        feedbackStatus: true,
+        candidate: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    const myActions =
+      userRole === 'interviewer'
+        ? await prisma.interview.findMany({
+            where: {
+              interviewerId: userId,
+              feedbackStatus: 'pending',
+              status: 'completed',
+            },
+            take: 10,
+            select: {
+              id: true,
+              roundName: true,
+              candidate: { select: { id: true, firstName: true, lastName: true } },
+            },
+          })
+        : [];
+
+    const recentActivities = await prisma.auditLog.findMany({
+      where: { entityType: 'Candidate' },
+      take: 15,
+      orderBy: { timestamp: 'desc' },
+      select: {
+        action: true,
+        timestamp: true,
+        entityId: true,
+        performedBy: { select: { name: true } },
+      },
+    });
+
     res.json({
       totalCandidates,
       activeCandidates,
@@ -77,6 +153,12 @@ router.get('/hub', async (req: Request, res: Response, next: NextFunction) => {
       bySource: sourceCounts,
       myPendingInterviews,
       recentCandidates,
+      timeToFillDays,
+      ageOfJobDays,
+      offerAcceptanceRate,
+      completedInterviews,
+      myActions,
+      recentActivities,
     });
   } catch (e) {
     next(e);

@@ -27,6 +27,7 @@ import reportRoutes from './reportRoutes';
 import pulseRoutes from './pulseRoutes';
 import recognitionRoutes from './recognitionRoutes';
 import announcementRoutes from './announcementRoutes';
+import assessmentRoutes from './assessmentRoutes';
 
 const router = Router();
 
@@ -58,5 +59,6 @@ router.use('/reports', reportRoutes);
 router.use('/pulse', pulseRoutes);
 router.use('/recognition', recognitionRoutes);
 router.use('/announcements', announcementRoutes);
+router.use('/assessments', assessmentRoutes);
 
 export default router;
