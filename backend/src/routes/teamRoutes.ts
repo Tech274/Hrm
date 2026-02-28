@@ -81,6 +81,81 @@ router.get('/overview', async (req: Request, res: Response, next: NextFunction) 
   }
 });
 
+router.get('/manager-dashboard', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const reports = await prisma.user.findMany({ where: { managerId: userId }, select: { id: true } });
+    const reportIds = reports.map((r) => r.id);
+
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    thisMonthStart.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [
+      attendanceRecords,
+      pendingLeave,
+      pendingRegularization,
+      openTasks,
+      openReqs,
+    ] = await Promise.all([
+      reportIds.length > 0
+        ? prisma.attendanceRecord.findMany({
+            where: {
+              userId: { in: reportIds },
+              date: { gte: thisMonthStart, lte: today },
+            },
+            include: { user: { select: { id: true, name: true } } },
+          })
+        : [],
+      reportIds.length > 0
+        ? prisma.leaveRequest.findMany({
+            where: { userId: { in: reportIds }, status: 'pending' },
+            include: { user: { select: { name: true } }, leaveType: true },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          })
+        : [],
+      reportIds.length > 0
+        ? prisma.attendanceRegularization.findMany({
+            where: { userId: { in: reportIds }, status: 'pending' },
+            include: { user: { select: { name: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          })
+        : [],
+      reportIds.length > 0
+        ? prisma.task.findMany({
+            where: { userId: { in: reportIds }, status: { in: ['not_started', 'on_going'] } },
+            include: { user: { select: { name: true } } },
+            orderBy: { dueDate: 'asc' },
+            take: 15,
+          })
+        : [],
+      prisma.jobRequisition.count({ where: { hiringManagerId: userId, status: 'open' } }),
+    ]);
+
+    const attendanceByUser: Record<string, { present: number; total: number }> = {};
+    for (const r of attendanceRecords as { userId: string; remark: string }[]) {
+      if (!attendanceByUser[r.userId]) attendanceByUser[r.userId] = { present: 0, total: 0 };
+      attendanceByUser[r.userId].total++;
+      if (r.remark === 'Present' || r.remark === 'OnLeave') attendanceByUser[r.userId].present++;
+    }
+
+    res.json({
+      teamSize: reportIds.length,
+      attendanceSummary: attendanceByUser,
+      pendingLeave,
+      pendingRegularization,
+      openTasks,
+      openRequisitions: openReqs,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/members', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;

@@ -49,15 +49,48 @@ interface Candidate {
   }>;
 }
 
-type Tab = 'overview' | 'interviews' | 'feedback' | 'approvals' | 'audit';
+type Tab = 'overview' | 'interviews' | 'feedback' | 'approvals' | 'notes' | 'assessments' | 'audit';
+
+interface CandidateNote {
+  id: string;
+  body: string;
+  isPrivate: boolean;
+  createdAt: string;
+  author: { id: string; name: string; email: string };
+}
+
+interface AssessmentQuestion {
+  id: string;
+  title: string;
+  body: string | null;
+  type: string;
+  options: string[] | null;
+  sortOrder: number;
+}
+
+interface AssessmentAnswer {
+  id: string;
+  questionId: string;
+  answer: string | null;
+  submittedAt: string | null;
+  question: AssessmentQuestion;
+}
 
 export default function CandidateProfile() {
   const { id } = useParams<{ id: string }>();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [notes, setNotes] = useState<CandidateNote[]>([]);
+  const [noteBody, setNoteBody] = useState('');
+  const [notePrivate, setNotePrivate] = useState(false);
+  const [addingNote, setAddingNote] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [assessmentAnswers, setAssessmentAnswers] = useState<AssessmentAnswer[]>([]);
+  const [assessmentQuestions, setAssessmentQuestions] = useState<AssessmentQuestion[]>([]);
+  const [assessmentDraft, setAssessmentDraft] = useState<Record<string, string>>({});
+  const [savingAssessments, setSavingAssessments] = useState(false);
   const { user } = useAuth();
   const canApprove = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'admin_hr';
   const canEdit = user?.role === 'recruiter' || user?.role === 'admin' || user?.role === 'admin_hr';
@@ -78,6 +111,50 @@ export default function CandidateProfile() {
       .then((res) => setAuditLogs(res.data.data))
       .catch(() => setAuditLogs([]));
   }, [id, activeTab]);
+
+  useEffect(() => {
+    if (!id || activeTab !== 'notes') return;
+    api
+      .get(`/candidates/${id}/notes`)
+      .then((res) => setNotes(res.data.data ?? []))
+      .catch(() => setNotes([]));
+  }, [id, activeTab]);
+
+  useEffect(() => {
+    if (!id || activeTab !== 'assessments') return;
+    Promise.all([
+      api.get(`/assessments/candidates/${id}`).then((res) => res.data?.data ?? []),
+      api.get('/assessments/questions').then((res) => res.data?.data ?? []),
+    ])
+      .then(([answers, questions]) => {
+        setAssessmentAnswers(answers);
+        setAssessmentQuestions(questions);
+        const draft: Record<string, string> = {};
+        answers.forEach((a: AssessmentAnswer) => {
+          if (a.answer != null) draft[a.questionId] = String(a.answer);
+        });
+        setAssessmentDraft(draft);
+      })
+      .catch(() => {});
+  }, [id, activeTab]);
+
+  const addNote = async () => {
+    if (!id || !noteBody.trim()) return;
+    setAddingNote(true);
+    try {
+      const res = await api.post(`/candidates/${id}/notes`, {
+        body: noteBody.trim(),
+        isPrivate: notePrivate,
+      });
+      setNotes((prev) => [res.data, ...prev]);
+      setNoteBody('');
+      setNotePrivate(false);
+    } catch {
+      // ignore
+    } finally {
+      setAddingNote(false);
+    }
+  };
 
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
@@ -122,6 +199,8 @@ export default function CandidateProfile() {
     { key: 'interviews', label: 'Interviews' },
     { key: 'feedback', label: 'Feedback' },
     { key: 'approvals', label: 'Approvals' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'assessments', label: 'Assessments' },
     { key: 'audit', label: 'Audit' },
   ];
 
@@ -269,6 +348,61 @@ export default function CandidateProfile() {
         </div>
       )}
 
+      {activeTab === 'notes' && (
+        <div className="space-y-4">
+          {canEdit && (
+            <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+              <h3 className="font-semibold mb-2">Add Note</h3>
+              <textarea
+                value={noteBody}
+                onChange={(e) => setNoteBody(e.target.value)}
+                placeholder="Add a note..."
+                rows={3}
+                className="w-full px-4 py-2 border border-slate-300 rounded-md text-sm"
+              />
+              <div className="mt-2 flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={notePrivate}
+                    onChange={(e) => setNotePrivate(e.target.checked)}
+                    className="rounded"
+                  />
+                  Private (HR only)
+                </label>
+                <button
+                  onClick={addNote}
+                  disabled={addingNote || !noteBody.trim()}
+                  className="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50 text-sm"
+                >
+                  {addingNote ? 'Adding…' : 'Add Note'}
+                </button>
+              </div>
+            </div>
+          )}
+          {notes.length === 0 ? (
+            <p className="text-slate-500">No notes yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {notes.map((n) => (
+                <div
+                  key={n.id}
+                  className={`rounded-lg border p-4 ${
+                    n.isPrivate ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
+                  }`}
+                >
+                  <p className="text-slate-800 whitespace-pre-wrap">{n.body}</p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {n.author.name} · {new Date(n.createdAt).toLocaleString()}
+                    {n.isPrivate && ' · Private'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'approvals' && (
         <div className="space-y-4">
           {canApprove && (
@@ -321,6 +455,114 @@ export default function CandidateProfile() {
                 <p><strong>Approved At:</strong> {a.approvedAt ? new Date(a.approvedAt).toLocaleString() : '-'}</p>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {activeTab === 'assessments' && (
+        <div className="space-y-4">
+          {canEdit && assessmentQuestions.length > 0 && (
+            <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+              <h3 className="font-semibold mb-4">Record / Update Answers</h3>
+              <div className="space-y-4">
+                {assessmentQuestions.map((q) => (
+                  <div key={q.id}>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      {q.title}
+                      {q.body && <span className="font-normal text-slate-500"> — {q.body}</span>}
+                    </label>
+                    {q.type === 'single_choice' && Array.isArray(q.options) ? (
+                      <select
+                        value={assessmentDraft[q.id] ?? ''}
+                        onChange={(e) => setAssessmentDraft((d) => ({ ...d, [q.id]: e.target.value }))}
+                        className="w-full max-w-md px-4 py-2 border border-slate-300 rounded-md"
+                      >
+                        <option value="">—</option>
+                        {q.options.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : q.type === 'multi_choice' && Array.isArray(q.options) ? (
+                      <div className="flex flex-wrap gap-2">
+                        {q.options.map((opt) => (
+                          <label key={opt} className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={(assessmentDraft[q.id] ?? '').split(',').map((s) => s.trim()).includes(opt)}
+                              onChange={(e) => {
+                                const current = (assessmentDraft[q.id] ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+                                const next = e.target.checked ? [...current, opt] : current.filter((x) => x !== opt);
+                                setAssessmentDraft((d) => ({ ...d, [q.id]: next.join(', ') }));
+                              }}
+                              className="rounded"
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <input
+                        type={q.type === 'number' ? 'number' : 'text'}
+                        value={assessmentDraft[q.id] ?? ''}
+                        onChange={(e) => setAssessmentDraft((d) => ({ ...d, [q.id]: e.target.value }))}
+                        className="w-full max-w-md px-4 py-2 border border-slate-300 rounded-md"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={async () => {
+                  if (!id) return;
+                  setSavingAssessments(true);
+                  try {
+                    const answers = assessmentQuestions.map((q) => ({
+                      questionId: q.id,
+                      answer: assessmentDraft[q.id]?.trim() || null,
+                    }));
+                    await api.put(`/assessments/candidates/${id}`, { answers });
+                    const res = await api.get(`/assessments/candidates/${id}`);
+                    setAssessmentAnswers(res.data?.data ?? []);
+                    const draft: Record<string, string> = {};
+                    (res.data?.data ?? []).forEach((a: AssessmentAnswer) => {
+                      if (a.answer != null) draft[a.questionId] = String(a.answer);
+                    });
+                    setAssessmentDraft(draft);
+                  } finally {
+                    setSavingAssessments(false);
+                  }
+                }}
+                disabled={savingAssessments}
+                className="mt-4 px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700 disabled:opacity-50"
+              >
+                {savingAssessments ? 'Saving…' : 'Save Answers'}
+              </button>
+            </div>
+          )}
+          <div className="bg-white rounded-lg shadow border border-slate-200 p-6">
+            <h3 className="font-semibold mb-2">Saved Answers</h3>
+            {assessmentAnswers.length === 0 ? (
+              <p className="text-slate-500">No assessment answers recorded yet.</p>
+            ) : (
+              <ul className="divide-y divide-slate-100 space-y-2">
+                {assessmentAnswers.map((a) => (
+                  <li key={a.id} className="py-2">
+                    <span className="font-medium text-slate-700">{a.question.title}:</span>{' '}
+                    <span className="text-slate-800">{a.answer ?? '—'}</span>
+                    {a.submittedAt && (
+                      <span className="text-xs text-slate-500 ml-2">
+                        · {new Date(a.submittedAt).toLocaleString()}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {assessmentQuestions.length === 0 && (
+            <p className="text-slate-500 text-sm">
+              No assessment questions defined. Add questions from <Link to="/assessments" className="text-violet-600 hover:underline">Assessments</Link> to record answers here.
+            </p>
           )}
         </div>
       )}

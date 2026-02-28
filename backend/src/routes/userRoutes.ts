@@ -23,6 +23,22 @@ router.get('/interviewers', requireRecruiter, async (_req, res, next) => {
   }
 });
 
+router.get('/recruiters', requireRecruiter, async (_req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: { in: ['recruiter', 'admin_hr', 'admin'] },
+        isActive: true,
+      },
+      select: { id: true, name: true, email: true, role: true },
+      orderBy: { name: 'asc' },
+    });
+    res.json({ data: users });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/', requireAdminHR, async (_req, res, next): Promise<void> => {
   try {
     const users = await prisma.user.findMany({

@@ -407,6 +407,27 @@ async function main() {
     // Phase 2 tables may not exist yet
   }
 
+  // Phase 6: Sample announcement
+  try {
+    const annCount = await prisma.announcement.count();
+    if (annCount === 0) {
+      const from = new Date();
+      const to = new Date();
+      to.setDate(to.getDate() + 30);
+      await prisma.announcement.create({
+        data: {
+          title: 'Welcome to HIREFLOW HRMS',
+          body: 'We are excited to have you here. Explore the new Employee Experience features including Pulse, Recognitions, and Announcements.',
+          effectiveFrom: from,
+          effectiveTo: to,
+          createdById: admin.id,
+        },
+      });
+    }
+  } catch {
+    // Phase 6 tables may not exist yet
+  }
+
   console.log('Seed completed successfully.');
   console.log('Demo users (password: Admin123!):');
   console.log('- admin@hireflow.com (Super Admin)');

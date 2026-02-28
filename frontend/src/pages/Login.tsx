@@ -15,13 +15,15 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const u = await login(email, password);
+      navigate(u?.role === 'recruiter' ? '/ta-hub' : '/overview');
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-          'Login failed'
-      );
+      const e = err as { response?: { data?: { error?: string }; status?: number }; message?: string; code?: string };
+      const msg = e?.response?.data?.error;
+      if (msg) setError(msg);
+      else if (e?.code === 'ERR_NETWORK' || !e?.response)
+        setError('Unable to reach server. Ensure the backend is running at http://localhost:4000');
+      else setError('Login failed');
     } finally {
       setLoading(false);
     }
@@ -34,8 +36,11 @@ export default function Login() {
           <h1 className="text-2xl font-bold text-center text-slate-900 mb-6">
             HIREFLOW
           </h1>
-          <p className="text-center text-slate-600 mb-8">
+          <p className="text-center text-slate-600 mb-4">
             Recruitment Governance Platform
+          </p>
+          <p className="text-center text-slate-500 text-xs mb-6">
+            Demo: admin@hireflow.com / Admin123!
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (

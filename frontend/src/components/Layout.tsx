@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 
@@ -17,12 +17,35 @@ const navItems = [
   { path: '/knowledge-base', label: 'Knowledge Base', icon: BookIcon },
 ];
 
+function ClipboardCheckIcon() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+    </svg>
+  );
+}
+
 const hrNavItems = [
-  { path: '/dashboard', label: 'Recruitment', icon: BriefcaseIcon },
+  { path: '/ta-hub', label: 'TA Hub', icon: BriefcaseIcon },
+  { path: '/job-requisitions', label: 'Job Requisitions', icon: BriefcaseIcon },
   { path: '/candidates', label: 'Candidates', icon: UserPlusIcon },
+  { path: '/assessments', label: 'Assessments', icon: ClipboardCheckIcon },
   { path: '/policies', label: 'Policies', icon: ShieldIcon },
   { path: '/drafts', label: 'Draft Assistant', icon: FileEditIcon },
   { path: '/audit', label: 'Audit Log', icon: FileTextIcon },
+];
+
+const recruiterNavItems = [
+  { path: '/ta-hub', label: 'TA Hub', icon: BriefcaseIcon },
+  { path: '/job-requisitions', label: 'Job Requisitions', icon: BriefcaseIcon },
+  { path: '/candidates', label: 'Candidates', icon: UserPlusIcon },
+  { path: '/assessments', label: 'Assessments', icon: ClipboardCheckIcon },
+  { path: '/policies', label: 'Policies', icon: ShieldIcon },
+  { path: '/drafts', label: 'Draft Assistant', icon: FileEditIcon },
+  { path: '/audit', label: 'Audit Log', icon: FileTextIcon },
+  { path: '/people', label: 'People', icon: PeopleIcon },
+  { path: '/knowledge-base', label: 'Knowledge Base', icon: BookIcon },
+  { path: '/hr-data', label: 'HR Data', icon: FileTextIcon },
 ];
 
 function HomeIcon() {
@@ -170,14 +193,23 @@ export default function Layout() {
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
+  const isRecruiter = user?.role === 'recruiter';
+  const recruiterBlockedPaths = ['/overview', '/team', '/leave', '/attendance', '/performance', '/tasks', '/exit', '/alerts', '/calendar', '/manager-dashboard', '/admin'];
+  const isOnBlockedPath = recruiterBlockedPaths.some(
+    (p) => location.pathname === p || location.pathname.startsWith(p + '/')
+  );
+  if (isRecruiter && isOnBlockedPath) {
+    return <Navigate to="/ta-hub" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0">
         <div className="p-4 border-b border-slate-700">
-          <Link to="/overview" className="text-xl font-semibold text-white">
+          <Link to={isRecruiter ? '/ta-hub' : '/overview'} className="text-xl font-semibold text-white">
             HIREFLOW
           </Link>
-          <p className="text-xs text-slate-400 mt-0.5">HRMS</p>
+          <p className="text-xs text-slate-400 mt-0.5">{isRecruiter ? 'Talent Acquisition' : 'HRMS'}</p>
         </div>
         <div className="p-4 border-b border-slate-700">
           <div className="flex items-center gap-3">
@@ -191,46 +223,94 @@ export default function Layout() {
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
-          <p className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Employee
-          </p>
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
-                isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <item.icon />
-              {item.label}
-            </Link>
-          ))}
-          <p className="px-4 py-2 mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Recruitment
-          </p>
-          {hrNavItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
-                isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <item.icon />
-              {item.label}
-            </Link>
-          ))}
-          {user?.role === 'admin' && (
-            <Link
-              to="/admin"
-              className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
-                isActive('/admin') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <SettingsIcon />
-              Admin
-            </Link>
+          {isRecruiter ? (
+            <>
+              <p className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Talent Acquisition
+              </p>
+              {recruiterNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                    isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <item.icon />
+                  {item.label}
+                </Link>
+              ))}
+            </>
+          ) : (
+            <>
+              <p className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Employee
+              </p>
+              {(user?.role === 'manager' || user?.role === 'admin' || user?.role === 'admin_hr') && (
+                <Link
+                  to="/manager-dashboard"
+                  className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                    isActive('/manager-dashboard') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <BriefcaseIcon />
+                  Manager Dashboard
+                </Link>
+              )}
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                    isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <item.icon />
+                  {item.label}
+                </Link>
+              ))}
+              {user?.role !== 'employee' && (
+                <>
+                  <p className="px-4 py-2 mt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Recruitment
+                  </p>
+                  {hrNavItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                        isActive(item.path) ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <item.icon />
+                      {item.label}
+                    </Link>
+                  ))}
+                </>
+              )}
+              {(user?.role === 'admin' || user?.role === 'admin_hr') && (
+                <>
+                  <Link
+                    to="/admin"
+                    className={`flex items-center gap-3 px-4 py-2.5 text-sm mt-2 ${
+                      isActive('/admin') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <SettingsIcon />
+                    Admin
+                  </Link>
+                  <Link
+                    to="/hr-data"
+                    className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                      isActive('/hr-data') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <FileTextIcon />
+                    HR Data
+                  </Link>
+                </>
+              )}
+            </>
           )}
         </nav>
       </aside>
@@ -247,6 +327,7 @@ export default function Layout() {
             <button type="submit" className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md">Search</button>
           </form>
           <div className="flex items-center gap-4">
+            {!isRecruiter && (
             <Link to="/alerts" className="relative p-2 text-slate-500 hover:text-slate-700">
               <BellIcon />
               {unreadAlerts > 0 && (
@@ -255,6 +336,7 @@ export default function Layout() {
                 </span>
               )}
             </Link>
+            )}
             <div className="flex items-center gap-2">
               <span className="text-sm text-slate-600">{user?.name}</span>
               <span className="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600">{user?.role}</span>

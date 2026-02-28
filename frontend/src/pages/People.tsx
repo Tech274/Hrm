@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import api from '../lib/api';
 
 interface Person {
@@ -68,13 +68,16 @@ export default function People() {
             <p className="col-span-full text-center text-slate-500 py-8">No people found.</p>
           ) : (
             people.map((p) => (
-              <div key={p.id} className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-semibold text-sm mb-3">{p.name.charAt(0)}</div>
-                <p className="font-medium text-slate-900">{p.name}</p>
-                <p className="text-sm text-slate-500 truncate">{p.email}</p>
-                <p className="text-sm text-slate-600 mt-1">{p.designation ?? '-'} · {p.department}</p>
-                {p.location && <p className="text-xs text-slate-500 mt-0.5">{p.location}</p>}
-              </div>
+              <Link key={p.id} to={`/people/${p.id}`} className="block">
+                <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-violet-300 transition-all cursor-pointer">
+                  <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-semibold text-sm mb-3">{p.name.charAt(0)}</div>
+                  <p className="font-medium text-slate-900">{p.name}</p>
+                  <p className="text-sm text-slate-500 truncate">{p.email}</p>
+                  <p className="text-sm text-slate-600 mt-1">{p.designation ?? '-'} · {p.department}</p>
+                  {p.location && <p className="text-xs text-slate-500 mt-0.5">{p.location}</p>}
+                  <p className="text-xs text-violet-600 mt-2">View 360 →</p>
+                </div>
+              </Link>
             ))
           )}
         </div>

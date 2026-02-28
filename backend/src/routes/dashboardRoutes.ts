@@ -70,6 +70,25 @@ router.get('/overview', async (req, res, next) => {
       return j.getMonth() === month && j.getDate() === day;
     });
 
+    const year = now.getFullYear();
+    const balances = await prisma.leaveBalance.findMany({
+      where: { userId, year },
+      include: { leaveType: true },
+    });
+    const leaveSuggestions: { message: string; type: string }[] = [];
+    for (const b of balances) {
+      if (b.balance > 0 && b.leaveType.renewsYearly) {
+        const yearEnd = new Date(year, 11, 31);
+        const daysLeft = Math.ceil((yearEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysLeft < 90 && b.balance >= 3) {
+          leaveSuggestions.push({
+            type: 'expiry',
+            message: `You have ${b.balance} ${b.leaveType.name} days left. Consider using before year-end.`,
+          });
+        }
+      }
+    }
+
     res.json({
       clockIn: todayRecord?.clockIn ?? null,
       clockOut: todayRecord?.clockOut ?? null,
@@ -80,6 +99,7 @@ router.get('/overview', async (req, res, next) => {
       attendanceRegularization: { raised: regCount, approved: 0, pending: regCount, rejected: 0 },
       birthdays,
       anniversaries,
+      leaveSuggestions,
     });
   } catch (e) {
     next(e);
