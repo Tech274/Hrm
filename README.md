@@ -38,6 +38,8 @@ You can run the app locally in two ways.
 
 4. **Open:** http://localhost:5173 — Login: **admin@hireflow.com** / **Admin123!**
 
+   **Single command from repo root:** `npm run dev` starts both backend and frontend (after Postgres is up and migrations applied).
+
 ### Option 2 – Full stack in Docker
 
 ```bash
