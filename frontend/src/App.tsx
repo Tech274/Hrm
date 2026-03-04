@@ -19,10 +19,12 @@ import AdminPanel from './pages/AdminPanel';
 import UserEdit from './pages/UserEdit';
 import CandidateEdit from './pages/CandidateEdit';
 import HRData from './pages/HRData';
+import HRAttendanceDashboard from './pages/HRAttendanceDashboard';
 import Policies from './pages/Policies';
 import DraftAssistant from './pages/DraftAssistant';
 import Team from './pages/Team';
 import People from './pages/People';
+import OrgChart from './pages/OrgChart';
 import Employee360 from './pages/Employee360';
 import ManagerDashboard from './pages/ManagerDashboard';
 import Tasks from './pages/Tasks';
@@ -89,6 +91,7 @@ function AppRoutes() {
         <Route path="admin" element={<AdminPanel />} />
         <Route path="admin/users/:id" element={<UserEdit />} />
         <Route path="hr-data" element={<HRData />} />
+        <Route path="attendance-dashboard" element={<HRAttendanceDashboard />} />
         <Route path="team" element={<Team />} />
         <Route path="performance" element={<Performance />} />
         <Route path="tasks" element={<Tasks />} />
@@ -97,6 +100,7 @@ function AppRoutes() {
         <Route path="calendar" element={<Calendar />} />
         <Route path="people/:id" element={<Employee360 />} />
         <Route path="people" element={<People />} />
+        <Route path="org-chart" element={<OrgChart />} />
         <Route path="manager-dashboard" element={<ManagerDashboard />} />
         <Route path="knowledge-base" element={<KnowledgeBase />} />
         <Route path="assessments" element={<Assessments />} />

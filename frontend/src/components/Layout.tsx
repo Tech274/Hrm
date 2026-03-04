@@ -44,6 +44,7 @@ const recruiterNavItems = [
   { path: '/drafts', label: 'Draft Assistant', icon: FileEditIcon },
   { path: '/audit', label: 'Audit Log', icon: FileTextIcon },
   { path: '/people', label: 'People', icon: PeopleIcon },
+  { path: '/org-chart', label: 'Org Chart', icon: TeamIcon },
   { path: '/knowledge-base', label: 'Knowledge Base', icon: BookIcon },
   { path: '/hr-data', label: 'HR Data', icon: FileTextIcon },
 ];
@@ -257,6 +258,15 @@ export default function Layout() {
                   Manager Dashboard
                 </Link>
               )}
+              <Link
+                to="/org-chart"
+                className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                  isActive('/org-chart') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <TeamIcon />
+                Org Chart
+              </Link>
               {navItems.map((item) => (
                 <Link
                   key={item.path}
@@ -307,6 +317,15 @@ export default function Layout() {
                   >
                     <FileTextIcon />
                     HR Data
+                  </Link>
+                  <Link
+                    to="/attendance-dashboard"
+                    className={`flex items-center gap-3 px-4 py-2.5 text-sm ${
+                      isActive('/attendance-dashboard') ? 'bg-violet-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <AttendanceIcon />
+                    Attendance Dashboard
                   </Link>
                 </>
               )}

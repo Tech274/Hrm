@@ -195,6 +195,125 @@ async function main() {
     },
   });
 
+  // Department heads (for org chart) – report to admin
+  const deptHeads = await Promise.all([
+    prisma.user.upsert({
+      where: { email: 'product.lead@hireflow.com' },
+      update: { managerId: admin.id, department: 'Product', designation: 'Head of Product', organization: org },
+      create: {
+        name: 'Product Lead',
+        email: 'product.lead@hireflow.com',
+        password: hashedPassword,
+        role: Role.manager,
+        department: 'Product',
+        employeeId: 'EMP008',
+        managerId: admin.id,
+        designation: 'Head of Product',
+        location: 'Mumbai',
+        joiningDate: new Date('2019-04-01'),
+        birthday: new Date('1986-03-12'),
+        organization: org,
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'sales.lead@hireflow.com' },
+      update: { managerId: admin.id, department: 'Sales', designation: 'Head of Sales', organization: org },
+      create: {
+        name: 'Sales Lead',
+        email: 'sales.lead@hireflow.com',
+        password: hashedPassword,
+        role: Role.manager,
+        department: 'Sales',
+        employeeId: 'EMP009',
+        managerId: admin.id,
+        designation: 'Head of Sales',
+        location: 'Delhi',
+        joiningDate: new Date('2019-08-01'),
+        birthday: new Date('1984-07-20'),
+        organization: org,
+      },
+    }),
+    prisma.user.upsert({
+      where: { email: 'operations.lead@hireflow.com' },
+      update: { managerId: admin.id, department: 'Operations', designation: 'Head of Operations', organization: org },
+      create: {
+        name: 'Operations Lead',
+        email: 'operations.lead@hireflow.com',
+        password: hashedPassword,
+        role: Role.manager,
+        department: 'Operations',
+        employeeId: 'EMP010',
+        managerId: admin.id,
+        designation: 'Head of Operations',
+        location: 'Mumbai',
+        joiningDate: new Date('2020-01-15'),
+        birthday: new Date('1989-11-05'),
+        organization: org,
+      },
+    }),
+  ]);
+  const productLead = deptHeads[0];
+  const salesLead = deptHeads[1];
+  const operationsLead = deptHeads[2];
+
+  // Bulk seed: 100+ users across departments (93 additional employees)
+  const firstNames = [
+    'Aarav', 'Aditi', 'Anil', 'Arjun', 'Bhavya', 'Chetan', 'Divya', 'Gaurav', 'Ishita', 'Karan',
+    'Kavya', 'Manish', 'Neha', 'Priya', 'Rahul', 'Riya', 'Sandeep', 'Shreya', 'Vikram', 'Ananya',
+    'Rohan', 'Pooja', 'Amit', 'Sneha', 'Rajesh', 'Kriti', 'Vivek', 'Nidhi', 'Sanjay', 'Meera',
+    'Alok', 'Preeti', 'Deepak', 'Swati', 'Nitin', 'Tanuja', 'Suresh', 'Lakshmi', 'Manoj', 'Kiran',
+  ];
+  const lastNames = [
+    'Sharma', 'Patel', 'Singh', 'Kumar', 'Reddy', 'Nair', 'Iyer', 'Menon', 'Pillai', 'Gupta',
+    'Joshi', 'Desai', 'Mehta', 'Shah', 'Rao', 'Narayan', 'Kulkarni', 'Bhat', 'Murthy', 'Saxena',
+  ];
+  const departmentsConfig: { dept: string; count: number; managerId: string; designations: string[] }[] = [
+    { dept: 'Engineering', count: 24, managerId: manager.id, designations: ['Software Engineer', 'Senior Engineer', 'Tech Lead', 'Staff Engineer'] },
+    { dept: 'Product', count: 12, managerId: productLead.id, designations: ['Product Manager', 'Associate PM', 'Senior PM', 'Product Analyst'] },
+    { dept: 'Sales', count: 12, managerId: salesLead.id, designations: ['Sales Executive', 'Account Manager', 'Senior Sales', 'Sales Lead'] },
+    { dept: 'Marketing', count: 10, managerId: admin.id, designations: ['Marketing Manager', 'Content Lead', 'Digital Marketing', 'Brand Manager'] },
+    { dept: 'HR', count: 3, managerId: admin.id, designations: ['HR Executive', 'HR Manager', 'Talent Partner'] },
+    { dept: 'Operations', count: 8, managerId: operationsLead.id, designations: ['Operations Executive', 'Ops Manager', 'Logistics Lead'] },
+    { dept: 'Customer Success', count: 10, managerId: admin.id, designations: ['CSM', 'Senior CSM', 'Customer Success Lead'] },
+    { dept: 'Content', count: 8, managerId: admin.id, designations: ['Content Writer', 'Senior Writer', 'Content Lead'] },
+    { dept: 'Learning Design', count: 5, managerId: admin.id, designations: ['Instructional Designer', 'Senior ID', 'L&D Specialist'] },
+    { dept: 'Support', count: 7, managerId: operationsLead.id, designations: ['Support Engineer', 'Senior Support', 'Support Lead'] },
+    { dept: 'Finance', count: 5, managerId: admin.id, designations: ['Finance Analyst', 'Accountant', 'Finance Manager'] },
+  ];
+  const locations = ['Mumbai', 'Bangalore', 'Delhi', 'Hyderabad', 'Chennai', 'Pune'];
+  let empNum = 11;
+  for (const config of departmentsConfig) {
+    for (let i = 0; i < config.count; i++) {
+      const firstName = firstNames[(empNum + i) % firstNames.length];
+      const lastName = lastNames[(empNum + i) % lastNames.length];
+      const name = `${firstName} ${lastName}`;
+      const email = `emp${String(empNum).padStart(3, '0')}@hireflow.com`;
+      const designation = config.designations[i % config.designations.length];
+      const joiningDate = new Date(2019 + (i % 5), i % 12, (i % 28) + 1);
+      const birthday = new Date(1985 + (i % 20), (i * 3) % 12, (i % 25) + 1);
+      const location = locations[(empNum + i) % locations.length];
+      await prisma.user.upsert({
+        where: { email },
+        update: { name, department: config.dept, managerId: config.managerId, designation, location, joiningDate, birthday, organization: org },
+        create: {
+          name,
+          email,
+          password: hashedPassword,
+          role: Role.employee,
+          department: config.dept,
+          employeeId: `EMP${String(empNum).padStart(3, '0')}`,
+          managerId: config.managerId,
+          designation,
+          location,
+          joiningDate,
+          birthday,
+          organization: org,
+        },
+      });
+      empNum++;
+    }
+  }
+
   // HRMS: Shifts, Leave types, Holidays
   let shift = await prisma.shift.findFirst();
   if (!shift) {
@@ -231,10 +350,17 @@ async function main() {
     }
   }
 
-  // Sample leave balances for current year
-  for (const u of [admin, manager, interviewer1, interviewer2, recruiter, adminHr, employeeUser]) {
+  // Leave balances for current year (all users)
+  const allUsers = await prisma.user.findMany({ select: { id: true } });
+  const accruedByType: Record<string, number> = {
+    'Casual Leave': 6,
+    'Sick Leave': 6,
+    'Privilege Leave': 32,
+    'Bereavement Leave': 3,
+  };
+  for (const u of allUsers) {
     for (const lt of leaveTypes) {
-      const accrued = lt.name === 'Casual Leave' ? 6 : lt.name === 'Sick Leave' ? 6 : lt.name === 'Privilege Leave' ? 32 : lt.name === 'Bereavement Leave' ? 3 : 0;
+      const accrued = accruedByType[lt.name] ?? 0;
       await prisma.leaveBalance.upsert({
         where: { userId_leaveTypeId_year: { userId: u.id, leaveTypeId: lt.id, year } },
         create: { userId: u.id, leaveTypeId: lt.id, year, accrued, balance: accrued, used: 0, requested: 0 },
