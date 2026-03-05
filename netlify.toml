@@ -1,0 +1,9 @@
+[build]
+  command = "cd frontend && npm install && npm run build"
+  publish = "frontend/dist"
+
+# Set in Netlify UI (Site settings → Environment variables) for your backend URL:
+#   VITE_API_URL = https://your-backend.onrender.com/api
+# Or override below (replace with your actual Render backend URL):
+[build.environment]
+  VITE_API_URL = "https://your-backend.onrender.com/api"

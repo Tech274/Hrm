@@ -1,0 +1,52 @@
+# Production deployment for skillhub365.co.in
+# Run: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: skillhub-postgres
+    environment:
+      POSTGRES_USER: hireflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-secure-password}
+      POSTGRES_DB: hireflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hireflow -d hireflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # Don't expose 5432 publicly in production
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skillhub-backend
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://hireflow:${POSTGRES_PASSWORD:-change-me-secure-password}@postgres:5432/hireflow
+      JWT_SECRET: ${JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      PORT: 4000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: skillhub-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
