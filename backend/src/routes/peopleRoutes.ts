@@ -8,6 +8,40 @@ const router = Router();
 router.use(authMiddleware);
 router.use(requireAnyAuth);
 
+router.get('/org-tree', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const people = await prisma.user.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        employeeId: true,
+        designation: true,
+        department: true,
+        location: true,
+        managerId: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+    const byManager = new Map<string | null, typeof people>([]);
+    for (const p of people) {
+      const key = p.managerId ?? 'root';
+      if (!byManager.has(key)) byManager.set(key, []);
+      byManager.get(key)!.push(p);
+    }
+    function buildTree(managerId: string | null): Array<typeof people[0] & { children: ReturnType<typeof buildTree> }> {
+      const key = managerId ?? 'root';
+      const reports = byManager.get(key) ?? [];
+      return reports.map((p) => ({ ...p, children: buildTree(p.id) }));
+    }
+    const tree = buildTree(null);
+    res.json({ tree, flat: people });
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get('/:id/360', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const viewerId = req.user!.id;
